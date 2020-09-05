@@ -8,6 +8,8 @@ target 'mapTrace' do
 
   use_react_native!(:path => config["reactNativePath"])
 
+  pod '@mauron85_react-native-background-geolocation', :path => '../node_modules/@mauron85/react-native-background-geolocation'
+
   target 'mapTraceTests' do
     inherit! :complete
     # Pods for testing

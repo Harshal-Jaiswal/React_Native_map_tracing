@@ -2,9 +2,12 @@ import React, { Component } from "react";
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   Platform,
+  TouchableHighlight,
+  NativeModules,
+  Text,
+  DeviceEventEmitter,
   PermissionsAndroid
 } from "react-native";
 import MapView, {
@@ -15,6 +18,8 @@ import MapView, {
 } from "react-native-maps";
 import haversine from "haversine";
 import Geolocation from '@react-native-community/geolocation';
+// import BackgroundGeolocation from '@mauron85/react-native-background-geolocation';
+
 
 const LATITUDE = 0;
 const LONGITUDE = 0;
@@ -49,17 +54,28 @@ class App extends Component {
     // this.getCurrentLoc();
     this.requestLocationPermission();
 
+    // console.log(NativeModules.LocationManager.JS_LOCATION_EVENT_NAME)
+    this.subscription = DeviceEventEmitter.addListener(
+      NativeModules.LocationManager.JS_LOCATION_EVENT_NAME,
+      (e) => {
+        console.log(
+          // `Received Coordinates from native side at ${new Date(
+          //   e.timestamp,
+          // ).toTimeString()}: `,
+          // e.latitude,
+          // e.longitude,
+          e,
+        );
 
-    this.watchID = Geolocation.watchPosition(
-      position => {
         const { routeCoordinates, distanceTravelled } = this.state;
-        const { latitude, longitude, speed } = position.coords;
+        const { latitude, longitude, } = e;
 
-        console.log(position.coords)
+        // console.log(position.coords)
         const newCoordinate = {
           latitude,
           longitude
         };
+
 
         if (Platform.OS === "android") {
           if (this.marker) {
@@ -80,18 +96,56 @@ class App extends Component {
           distanceTravelled:
             distanceTravelled + this.calcDistance(newCoordinate),
           prevLatLng: newCoordinate,
-          speed: speed,
+
         });
 
       },
-      error => console.log('error', error),
-      {
-        enableHighAccuracy: true,
-        timeout: 20000,
-        maximumAge: 1000,
-        distanceFilter: 10,
-      }
     );
+
+    // this.onEnableLocationPress();
+
+    // this.watchID = Geolocation.watchPosition(
+    //   position => {
+    //     const { routeCoordinates, distanceTravelled } = this.state;
+    //     const { latitude, longitude, speed } = position.coords;
+
+    //     console.log(position.coords)
+    //     const newCoordinate = {
+    //       latitude,
+    //       longitude
+    //     };
+
+    //     if (Platform.OS === "android") {
+    //       if (this.marker) {
+    //         // console.log(this.marker)
+    //         this.marker.animateMarkerToCoordinate(
+    //           newCoordinate,
+    //           500
+    //         );
+    //       }
+    //     } else {
+    //       coordinate.timing(newCoordinate, { useNativeDriver: true }).start();
+    //     }
+
+    //     this.setState({
+    //       latitude,
+    //       longitude,
+    //       routeCoordinates: routeCoordinates.concat([newCoordinate]),
+    //       distanceTravelled:
+    //         distanceTravelled + this.calcDistance(newCoordinate),
+    //       prevLatLng: newCoordinate,
+    //       speed: speed,
+    //     });
+
+    //   },
+    //   error => console.log('error', error),
+    //   {
+    //     enableHighAccuracy: true,
+    //     timeout: 20000,
+    //     maximumAge: 1000,
+    //     distanceFilter: 10,
+    //   }
+    // );
   }
 
 
@@ -106,19 +160,42 @@ class App extends Component {
         }
       )
       if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+
         console.log("You can use locations ")
+       
       } else {
         console.log("Location permission denied")
+      
       }
     } catch (err) {
       console.log(err)
+     
     }
   }
 
   componentWillUnmount() {
     console.log('unmount')
-    Geolocation.clearWatch(this.watchID);
+    this.subscription.remove();
+    // BackgroundGeolocation.removeAllListeners();
+
+    // Geolocation.clearWatch(this.watchID);
   }
+
+  onEnableLocationPress = async () => {
+    // const { locationPermissionGranted, requestLocationPermission } = this.props;
+    // if (this.requestLocationPermission()) {
+    //   this.requestLocationPermission();
+    //   if (granted) {
+    //     return NativeModules.LocationManager.startBackgroundLocation();
+    //   }
+    // }
+    // console.log(NativeModules)
+    NativeModules.LocationManager.startBackgroundLocation();
+  };
+
+  onCancelLocationPress = () => {
+    NativeModules.LocationManager.stopBackgroundLocation();
+  };
 
   getMapRegion = () => ({
     latitude: this.state.latitude,
@@ -135,6 +212,7 @@ class App extends Component {
   render() {
     return (
       <View style={styles.container}>
+
         <MapView
           style={styles.map}
           provider={PROVIDER_GOOGLE}
@@ -151,6 +229,7 @@ class App extends Component {
             coordinate={this.state.coordinate}
           />
         </MapView>
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity style={[styles.bubble, styles.button]}>
             <Text style={styles.bottomBarContent}>
@@ -158,6 +237,16 @@ class App extends Component {
             </Text>
           </TouchableOpacity>
         </View>
+
+        <View >
+          <TouchableHighlight style={styles.buttonContainer} onPress={this.onEnableLocationPress}>
+            <Text >Enable Location</Text>
+          </TouchableHighlight>
+          <TouchableHighlight style={styles.buttonContainer} onPress={this.onCancelLocationPress}>
+            <Text >Cancel Location</Text>
+          </TouchableHighlight>
+        </View>
+
       </View>
     );
   }
