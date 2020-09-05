@@ -28,13 +28,13 @@
 
        <meta-data
         android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyAXO36ShXYc-W-nU0B70E1emHNnmaWhCWc"/>
+        android:value="Add your keys"/>
 
         <service
             android:name=".location.LocationForegroundService"
             android:enabled="true" />
         <service android:name=".location.LocationBackgroundService" />
-        
+
     </application>
 
 </manifest>
